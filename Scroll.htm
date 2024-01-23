@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scrolling Text Creator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #303030;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 90%; /* Adjust the max-width as needed */
+        }
+        h2 {
+            color: #00A2FF;
+            text-align: center;
+        }
+        form {
+            background-color: #424242;
+            padding: 20px;
+            border-radius: 5px;
+            margin: auto;
+        }
+        input[type=number], input[type=text] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 8px 0;
+            display: inline-block;
+            border: none;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: #ddd;
+            color: #000;
+        }
+        input[type=submit] {
+            width: 100%;
+            background-color: #00A2FF;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type=submit]:hover {
+            background-color: #008CBA;
+        }
+    </style>
+    <script type="text/javascript">
+        function updateSegmentFields() {
+        
+            var numSegments = document.getElementById('num_segments').value;
+            var container = document.getElementById('segmentContainer');
+            container.innerHTML = '';
+
+            for (var i = 1; i <= numSegments; i++) {
+                container.innerHTML += 'Text for Segment ' + i + ': <input type="text" name="text' + i + '"><br>';
+            }
+        }
+
+        function sendToWLED(event) {
+          
+        event.preventDefault();
+		
+		      clear = ({"seg":[{},{"stop":0},{"stop":0},{"stop":0},{"stop":0},{"stop":0},{"stop":0},{"stop":0},{"stop":0},{"stop":0}]});
+		
+		      var clrdata = JSON.stringify(clear);
+          var clrxhr = new XMLHttpRequest();
+          clrxhr.open("POST", "/json", false);
+          clrxhr.setRequestHeader("Content-Type", "application/json");
+          clrxhr.send(clrdata);
+					
+          var numSegments = parseInt(document.getElementById('num_segments').value);
+          var gridWidth = parseInt(document.getElementById('grid_width').value);
+          var gridHeight = parseInt(document.getElementById('grid_height').value);
+			    var textSpeed = document.getElementById('text_speed').value;
+			    var textSize = document.getElementById('text_size').value;
+			    var trail = document.getElementById('trail').value;
+			    var rev = document.getElementById('reverse').checked;
+			    var totalLEDs = gridWidth * gridHeight;
+			    var baseSegmentSize = Math.floor(totalLEDs/numSegments);
+			    var segmentSize = baseSegmentSize-(baseSegmentSize%gridHeight);
+			    segmentSize = Math.max(segmentSize,gridHeight);
+
+			var segments = [];
+
+            for (var i = 0; i < numSegments; i++) {
+                var text = document.getElementsByName('text' + (i + 1))[0].value;
+                var start = i * segmentSize;
+                var stop = start + segmentSize - 1;
+                var startY = ((i * segmentSize)/gridWidth);
+                var stopY = Math.floor((i * segmentSize + segmentSize - 1)/gridWidth);
+                segments.push({"n":text,"start":start,"stop":stop,"startY":startY,"stopY":stopY,"fx":122,"sx":textSpeed,"c1":trail,"c2":textSize,"pal":11,"bri":150,"rev":rev});
+            }
+
+            var data = JSON.stringify({"seg": segments});
+            console.log(JSON.stringify({"seg": segments}));
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/json", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(data);
+
+        }
+    </script>
+</head>
+<body onload="updateSegmentFields()">
+    <div class="container">
+        <h2>Scrolling Text Creator</h2>
+        <form onsubmit="sendToWLED(event)">
+			      Text Speed: <input type="range" id="text_speed" name="text_speed" min="1" max="255" value="128"><br>
+			      Text Size: <input type="range" id="text_size" name="text_size" min="1" max="255" value="128"><br>
+			      Trail: <input type="range" id="trail" name="trail" min="0" max="255" value="0"><br>
+			      Reverse Text: <input type="checkbox" id="reverse" name="reverse"><br>
+			      <br>
+            Number of Segments: <input type="number" id="num_segments" value="1" min="1" name="num_segments" oninput="updateSegmentFields()"><br>
+            Grid Width: <input type="number" id="grid_width" name="grid_width"><br>
+            Grid Height: <input type="number" id="grid_height" name="grid_height"><br>
+            <div id="segmentContainer"></div>
+            <input type="submit" value="Submit">
+        </form>
+    </div>
+</body>
+</html>
